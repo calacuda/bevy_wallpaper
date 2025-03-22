@@ -1,2 +1,4 @@
 # bevy_wallpaper
-personal bevy wallpaper program
+
+Personal bevy wallpaper program. For the library that allows for this [see here](https://github.com/calacuda/bevy-linux-wallpaper).
+
