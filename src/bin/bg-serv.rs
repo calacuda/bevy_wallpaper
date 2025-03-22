@@ -138,8 +138,9 @@ fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
     let mut space_rock = Asteroid::default();
     let transform = space_rock
-        .get_transform(1000.0)
-        .with_rotation(rot_1 * rot_2);
+        .get_transform(10_000.0)
+        .with_rotation(rot_1 * rot_2)
+        .with_scale((0.10, 0.10, 0.10).into());
 
     commands.spawn((
         Mesh3d(cube),
