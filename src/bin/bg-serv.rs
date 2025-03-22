@@ -12,6 +12,7 @@ use bevy::{
 };
 // use bevy_window::{PresentMode, WindowLevel, WindowMode, WindowResized, WindowResolution};
 use bevy_linux_wallpaper::WallpaperPlugin;
+use bevy_wallpaper::space_objects::{SpaceThingTrait, asteroid::Asteroid};
 use std::f32::consts::PI;
 
 /// A marker component for our shapes so we can query them separately from the ground plane
@@ -116,23 +117,53 @@ fn camera_setup(mut commands: Commands) {
     ));
 }
 
+// fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+//     let cube = meshes.add(Cuboid::default());
+//
+//     let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
+//     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
+//
+//     commands.spawn((
+//         Mesh3d(cube),
+//         // MeshMaterial3d(debug_material.clone()),
+//         Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
+//         Shape,
+//     ));
+// }
+
 fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     let cube = meshes.add(Cuboid::default());
 
     let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
+    let mut space_rock = Asteroid::default();
+    let transform = space_rock
+        .get_transform(1000.0)
+        .with_rotation(rot_1 * rot_2);
 
     commands.spawn((
         Mesh3d(cube),
         // MeshMaterial3d(debug_material.clone()),
-        Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
+        space_rock,
+        // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
+        transform,
         Shape,
     ));
 }
 
-fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
-    for mut transform in &mut query {
-        transform.rotate_y(time.delta_secs());
+// fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
+//     for mut transform in &mut query {
+//         transform.rotate_y(time.delta_secs());
+//         // info!("{transform:?}");
+//     }
+// }
+
+fn rotate(mut query: Query<(&mut Asteroid, &mut Transform), With<Shape>>, time: Res<Time>) {
+    for (mut asteroid, mut transform) in &mut query {
+        // transform.rotate_y(time.delta_secs());
+        // info!("{transform:?}");
+        asteroid.update_orientation(&time, &mut transform);
+        asteroid.update_location(&time, &mut transform);
         // info!("{transform:?}");
     }
 }

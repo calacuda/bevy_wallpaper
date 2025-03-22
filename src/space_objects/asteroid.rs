@@ -1,0 +1,103 @@
+use super::SpaceThingTrait;
+use bevy::prelude::*;
+use rand::Rng;
+use std::{f32::consts::PI, path::PathBuf};
+
+pub const ASTEROID_MESH: &str = "mesh/debug.gltf";
+
+#[derive(Clone, Debug, Component)]
+pub struct Asteroid {
+    /// the diameter of the asteroid in meters
+    size: f32,
+    /// end location
+    going_to: Vec3,
+    /// where to Spawn the asteroid.
+    spawn_at: Vec3,
+    /// speed in km/s
+    speed: f32,
+    /// the axis on which the object will rotate.
+    rotation_axis: Vec2,
+    rotation_speed: f32,
+    travelled: f32,
+}
+
+impl Default for Asteroid {
+    fn default() -> Self {
+        let mut rng = rand::rng();
+        let half_pi = PI / 2.0;
+
+        let size = rng.random_range(0.1..0.240);
+        let speed = rng.random_range(16.5..25.0);
+        let speed = speed / 10.;
+
+        let theta_x = rng.random_range(0.0..PI);
+        let theta_y = rng.random_range(0.0..PI);
+        let magnitude = 0.0;
+        let spawn_at = (theta_x, theta_y, magnitude).into();
+        info!("spawn_at => {}", spawn_at);
+        // let theta_x = rng.random_range(0.0..PI);
+        // let theta_y = rng.random_range(0.0..PI);
+        let magnitude = size;
+        let going_to = (
+            (theta_x + half_pi) % PI,
+            (theta_y + half_pi) % PI,
+            magnitude,
+        )
+            .into();
+        info!("going_to => {}", going_to);
+        let rotation_axis = {
+            let theta_x = rng.random_range(0.0..(2.0 * PI));
+            let theta_y = rng.random_range(0.0..(2.0 * PI));
+            (theta_x, theta_y).into()
+        };
+        let rotation_speed = rng.random_range(0.0..0.25);
+        let travelled = 0.0;
+
+        Self {
+            size,
+            speed,
+            spawn_at,
+            going_to,
+            rotation_axis,
+            rotation_speed,
+            travelled,
+        }
+    }
+}
+
+impl SpaceThingTrait for Asteroid {
+    fn update_orientation(&mut self, time_delta: &Res<Time>, orientation: &mut Transform) {
+        orientation.rotate_x(self.rotation_axis[0] * time_delta.delta_secs() * self.rotation_speed);
+        orientation.rotate_y(self.rotation_axis[1] * time_delta.delta_secs() * self.rotation_speed);
+    }
+
+    fn update_location(&mut self, time_delta: &Res<Time>, location: &mut Transform) {
+        // info!("{}", time_delta.delta_secs());
+        let distance = self.speed * time_delta.delta_secs();
+        self.travelled += distance;
+        let delta = self.going_to.lerp(self.spawn_at, self.travelled);
+
+        location.translation = delta;
+    }
+
+    fn get_mesh(&self) -> impl Into<PathBuf> {
+        ASTEROID_MESH
+    }
+
+    fn get_transform(&mut self, fov: f32) -> Transform {
+        let mut tmp_loc = self.spawn_at.clone();
+        tmp_loc[2] = fov;
+        self.spawn_at[0] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].cos();
+        self.spawn_at[1] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].sin();
+        self.spawn_at[2] = tmp_loc[2] * tmp_loc[1].cos();
+
+        let tmp_loc = self.going_to.clone();
+        self.going_to[0] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].cos();
+        self.going_to[1] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].sin();
+        self.going_to[2] = tmp_loc[2] * tmp_loc[1].cos();
+
+        self.speed /= fov;
+
+        Transform::from_xyz(self.spawn_at[0], self.spawn_at[1], self.spawn_at[2])
+    }
+}
