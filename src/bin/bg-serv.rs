@@ -141,7 +141,7 @@ fn spawn_spacething(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         Shape,
     ));
 
-    info!("spawning spacething");
+    debug!("spawning spacething");
 }
 
 fn rotate(mut query: Query<(&mut SpaceThing, &mut Transform), With<Shape>>, time: Res<Time>) {
@@ -175,7 +175,7 @@ fn despawn_spacethings(mut cmds: Commands, space_things: Query<(&SpaceThing, &Tr
     for (space_thing, transform, entity) in space_things.iter() {
         if space_thing.should_despawn() || transform.translation[2] > 8.0 {
             cmds.entity(entity).despawn_recursive();
-            info!("despawning spacething");
+            debug!("despawning spacething");
         }
     }
 }
