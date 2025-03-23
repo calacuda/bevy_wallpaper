@@ -4,15 +4,14 @@ use bevy::{
     log::{Level, LogPlugin},
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
-    render::pipelined_rendering::PipelinedRenderingPlugin,
+    render::{camera::CameraProjection, pipelined_rendering::PipelinedRenderingPlugin},
     window::{
         PresentMode, WindowCreated, WindowLevel, WindowMode, WindowResized, WindowResolution,
     },
     winit::{WakeUp, WinitPlugin},
 };
-// use bevy_window::{PresentMode, WindowLevel, WindowMode, WindowResized, WindowResolution};
 use bevy_linux_wallpaper::WallpaperPlugin;
-use bevy_wallpaper::space_objects::{SpaceThingTrait, asteroid::Asteroid};
+use bevy_wallpaper::space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid};
 use std::f32::consts::PI;
 
 /// A marker component for our shapes so we can query them separately from the ground plane
@@ -35,7 +34,6 @@ fn main() {
                         present_mode: PresentMode::AutoVsync,
                         name: Some("wallpaper".into()),
                         window_level: WindowLevel::AlwaysOnBottom,
-                        // mode: WindowMode::BorderlessFullscreen(MonitorSelection::Index(0)),
                         mode: WindowMode::Windowed,
                         skip_taskbar: false,
                         titlebar_shown: false,
@@ -66,7 +64,7 @@ fn main() {
             }
             .into(),
         })
-        .add_systems(Startup, (camera_setup, spawn_cube))
+        .add_systems(Startup, (camera_setup, spawn_spacething))
         .add_systems(
             Update,
             (
@@ -74,6 +72,8 @@ fn main() {
                 log_window_resize,
                 window_creation_log,
                 log_window_move,
+                despawn_spacethings,
+                spawn_spacething.run_if(every_five_sec),
             ),
         )
         .run();
@@ -103,6 +103,10 @@ fn camera_setup(mut commands: Commands) {
         Camera3d::default(),
         Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         Camera::default(),
+        Projection::Perspective(PerspectiveProjection {
+            far: 100_000_000.0,
+            ..default()
+        }),
     ));
 
     commands.spawn((
@@ -117,28 +121,14 @@ fn camera_setup(mut commands: Commands) {
     ));
 }
 
-// fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-//     let cube = meshes.add(Cuboid::default());
-//
-//     let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
-//     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
-//
-//     commands.spawn((
-//         Mesh3d(cube),
-//         // MeshMaterial3d(debug_material.clone()),
-//         Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
-//         Shape,
-//     ));
-// }
-
-fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+fn spawn_spacething(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     let cube = meshes.add(Cuboid::default());
 
     let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
-    let mut space_rock = Asteroid::default();
+    let mut space_rock = SpaceThing::Asteroid(Asteroid::default());
     let transform = space_rock
-        .get_transform(10_000.0)
+        .get_transform(100_000_000.0)
         .with_rotation(rot_1 * rot_2)
         .with_scale((0.10, 0.10, 0.10).into());
 
@@ -150,22 +140,14 @@ fn spawn_cube(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         transform,
         Shape,
     ));
+
+    info!("spawning spacething");
 }
 
-// fn rotate(mut query: Query<&mut Transform, With<Shape>>, time: Res<Time>) {
-//     for mut transform in &mut query {
-//         transform.rotate_y(time.delta_secs());
-//         // info!("{transform:?}");
-//     }
-// }
-
-fn rotate(mut query: Query<(&mut Asteroid, &mut Transform), With<Shape>>, time: Res<Time>) {
-    for (mut asteroid, mut transform) in &mut query {
-        // transform.rotate_y(time.delta_secs());
-        // info!("{transform:?}");
-        asteroid.update_orientation(&time, &mut transform);
-        asteroid.update_location(&time, &mut transform);
-        // info!("{transform:?}");
+fn rotate(mut query: Query<(&mut SpaceThing, &mut Transform), With<Shape>>, time: Res<Time>) {
+    for (mut space_thing, mut transform) in &mut query {
+        space_thing.update_orientation(&time, &mut transform);
+        space_thing.update_location(&time, &mut transform);
     }
 }
 
@@ -173,7 +155,6 @@ fn log_window_resize(mut resize_reader: EventReader<WindowResized>) {
     for e in resize_reader.read() {
         // When resolution is being changed
         info!("size {:.1} x {:.1}", e.width, e.height);
-        // info!("location {} x {}", e., e.height);
     }
 }
 
@@ -188,4 +169,17 @@ fn window_creation_log(mut created_evs: EventReader<WindowCreated>) {
     for e in created_evs.read() {
         info!("window created{e:?}");
     }
+}
+
+fn despawn_spacethings(mut cmds: Commands, space_things: Query<(&SpaceThing, &Transform, Entity)>) {
+    for (space_thing, transform, entity) in space_things.iter() {
+        if space_thing.should_despawn() || transform.translation[2] > 8.0 {
+            cmds.entity(entity).despawn_recursive();
+            info!("despawning spacething");
+        }
+    }
+}
+
+fn every_five_sec(time: Res<Time>) -> bool {
+    time.elapsed_secs() % 3.0 <= 0.04
 }

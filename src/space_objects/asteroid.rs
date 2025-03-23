@@ -19,6 +19,8 @@ pub struct Asteroid {
     rotation_axis: Vec2,
     rotation_speed: f32,
     travelled: f32,
+    scale: f32,
+    location: Vec3,
 }
 
 impl Default for Asteroid {
@@ -34,12 +36,12 @@ impl Default for Asteroid {
         let theta = rng.random_range(0.0..2.0 * PI);
         let magnitude = 0.0;
         let spawn_at = (0.0, 0.0, magnitude).into();
-        info!("spawn_at => {}", spawn_at);
+        // info!("spawn_at => {}", spawn_at);
         // let theta_x = rng.random_range(0.0..PI);
         // let theta_y = rng.random_range(0.0..PI);
-        let magnitude = size;
+        let magnitude = size * 1.75;
         let going_to = (theta, PI / 2.0, magnitude).into();
-        info!("going_to => {}", going_to);
+        // info!("going_to => {}", going_to);
         let rotation_axis = {
             let theta_x = rng.random_range(0.0..(2.0 * PI));
             let theta_y = rng.random_range(0.0..(2.0 * PI));
@@ -56,6 +58,8 @@ impl Default for Asteroid {
             rotation_axis,
             rotation_speed,
             travelled,
+            scale: 0.0,
+            location: Vec3::default(),
         }
     }
 }
@@ -78,6 +82,7 @@ impl SpaceThingTrait for Asteroid {
         //     self.going_to.lerp(self.spawn_at, self.travelled)
         // };
         let delta = self.going_to.lerp(self.spawn_at, self.travelled);
+        self.location = delta;
 
         location.translation = delta;
     }
@@ -103,7 +108,16 @@ impl SpaceThingTrait for Asteroid {
 
         self.speed /= fov;
 
+        let scale = (1.0 / fov) * self.size;
+        self.scale = scale;
+
         // Transform::from_xyz(self.spawn_at[0], self.spawn_at[1], self.spawn_at[2])
         Transform::from_xyz(self.going_to[0], self.going_to[1], self.going_to[2])
+            .with_scale(Vec3::new(scale, scale, scale))
     }
+
+    // fn should_despawn(&self) -> bool {
+    //     info!("{}", self.location[2]);
+    //     self.location[2] >= 8.0 + self.size
+    // }
 }
