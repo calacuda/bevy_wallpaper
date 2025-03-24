@@ -1,10 +1,14 @@
 use bevy::{
     a11y::AccessibilityPlugin,
+    asset::RenderAssetUsages,
     audio::AudioPlugin,
     log::{Level, LogPlugin},
-    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    pbr::wireframe::{NoWireframe, WireframeConfig, WireframePlugin},
     prelude::*,
-    render::{camera::CameraProjection, pipelined_rendering::PipelinedRenderingPlugin},
+    render::{
+        pipelined_rendering::PipelinedRenderingPlugin,
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+    },
     window::{
         PresentMode, WindowCreated, WindowLevel, WindowMode, WindowResized, WindowResolution,
     },
@@ -17,6 +21,9 @@ use std::f32::consts::PI;
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
 struct Shape;
+
+#[derive(Component)]
+struct DebugTexture(pub Handle<StandardMaterial>);
 
 fn main() {
     let mut wp_plug = WallpaperPlugin::<WakeUp>::default();
@@ -64,22 +71,31 @@ fn main() {
             }
             .into(),
         })
-        .add_systems(Startup, (camera_setup, spawn_spacething))
+        .add_systems(Startup, camera_setup)
         .add_systems(
             Update,
             (
-                rotate,
+                mod_spacething_transform,
                 log_window_resize,
                 window_creation_log,
                 log_window_move,
                 despawn_spacethings,
-                spawn_spacething.run_if(every_five_sec),
+                spawn_spacething.run_if(time_to_spawn),
             ),
         )
         .run();
 }
 
-fn camera_setup(mut commands: Commands) {
+fn camera_setup(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    let debug_material = materials.add(StandardMaterial {
+        base_color_texture: Some(images.add(uv_debug_texture())),
+        ..default()
+    });
+
     commands.insert_resource(ClearColor(
         Srgba {
             red: (30. / 255.),
@@ -99,55 +115,117 @@ fn camera_setup(mut commands: Commands) {
     //     .into(),
     // ));
 
+    commands.spawn(DebugTexture(debug_material));
+
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         Camera::default(),
         Projection::Perspective(PerspectiveProjection {
-            far: 100_000_000.0,
+            // far: 1_000.0,
+            far: 1_000_000.0,
             ..default()
         }),
+    ));
+
+    let intensity = 75_000.0;
+
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            // intensity: 10_000_000.,
+            intensity,
+            range: 100.0,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        // Transform::from_xyz(8.0, 16.0, 8.0),
+        Transform::from_xyz(1.0, 1.0, 8.0),
     ));
 
     commands.spawn((
         PointLight {
             shadows_enabled: true,
-            intensity: 10_000_000.,
+            // intensity: 10_000_000.,
+            intensity,
             range: 100.0,
             shadow_depth_bias: 0.2,
             ..default()
         },
-        Transform::from_xyz(8.0, 16.0, 8.0),
+        // Transform::from_xyz(8.0, 16.0, 8.0),
+        Transform::from_xyz(-1.0, 1.0, 8.0),
+    ));
+
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            // intensity: 10_000_000.,
+            intensity,
+            range: 100.0,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        // Transform::from_xyz(8.0, 16.0, 8.0),
+        Transform::from_xyz(1.0, -1.0, 8.0),
+    ));
+
+    commands.spawn((
+        PointLight {
+            shadows_enabled: true,
+            // intensity: 10_000_000.,
+            intensity,
+            range: 100.0,
+            shadow_depth_bias: 0.2,
+            ..default()
+        },
+        // Transform::from_xyz(8.0, 16.0, 8.0),
+        Transform::from_xyz(-1.0, -1.0, 8.0),
     ));
 }
 
-fn spawn_spacething(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-    let cube = meshes.add(Cuboid::default());
+fn spawn_spacething(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    debug_material: Single<&DebugTexture>,
+) {
+    // let cube = meshes.add(Cuboid::default());
+    let sphere = meshes.add(Sphere::default());
 
     let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
     let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
     let mut space_rock = SpaceThing::Asteroid(Asteroid::default());
     let transform = space_rock
-        .get_transform(100_000_000.0)
-        .with_rotation(rot_1 * rot_2)
-        .with_scale((0.10, 0.10, 0.10).into());
+        .get_transform(1_000_000.0)
+        // .get_transform(1_000.0)
+        .with_rotation(rot_1 * rot_2);
+    // .with_scale((0.10, 0.10, 0.10).into());
+    // transform.scale *= Vec3::new(0.10, 0.10, 0.10);
 
     commands.spawn((
-        Mesh3d(cube),
+        // Mesh3d(cube),
+        Mesh3d(sphere),
         // MeshMaterial3d(debug_material.clone()),
+        MeshMaterial3d(debug_material.0.clone()),
         space_rock,
         // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
         transform,
+        NoWireframe,
         Shape,
     ));
 
+    // info!("spawning spacething");
     debug!("spawning spacething");
 }
 
-fn rotate(mut query: Query<(&mut SpaceThing, &mut Transform), With<Shape>>, time: Res<Time>) {
+fn mod_spacething_transform(
+    mut query: Query<(&mut SpaceThing, &mut Transform), With<Shape>>,
+    time: Res<Time>,
+) {
     for (mut space_thing, mut transform) in &mut query {
         space_thing.update_orientation(&time, &mut transform);
         space_thing.update_location(&time, &mut transform);
+        // info!("space thing location = {}", transform.translation);
+        debug!("space thing location = {}", transform.translation);
     }
 }
 
@@ -175,11 +253,42 @@ fn despawn_spacethings(mut cmds: Commands, space_things: Query<(&SpaceThing, &Tr
     for (space_thing, transform, entity) in space_things.iter() {
         if space_thing.should_despawn() || transform.translation[2] > 8.0 {
             cmds.entity(entity).despawn_recursive();
+            // info!("despawning spacething");
             debug!("despawning spacething");
         }
     }
 }
 
-fn every_five_sec(time: Res<Time>) -> bool {
-    time.elapsed_secs() % 3.0 <= 0.04
+fn time_to_spawn(time: Res<Time>) -> bool {
+    // info!("{}", time.elapsed_secs() % 3.0);
+    time.elapsed_secs() % 2.5 <= 0.0303
+}
+
+/// Creates a colorful test pattern
+fn uv_debug_texture() -> Image {
+    const TEXTURE_SIZE: usize = 8;
+
+    let mut palette: [u8; 32] = [
+        255, 102, 159, 255, 255, 159, 102, 255, 236, 255, 102, 255, 121, 255, 102, 255, 102, 255,
+        198, 255, 102, 198, 255, 255, 121, 102, 255, 255, 236, 102, 255, 255,
+    ];
+
+    let mut texture_data = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
+    for y in 0..TEXTURE_SIZE {
+        let offset = TEXTURE_SIZE * y * 4;
+        texture_data[offset..(offset + TEXTURE_SIZE * 4)].copy_from_slice(&palette);
+        palette.rotate_right(4);
+    }
+
+    Image::new_fill(
+        Extent3d {
+            width: TEXTURE_SIZE as u32,
+            height: TEXTURE_SIZE as u32,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &texture_data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    )
 }

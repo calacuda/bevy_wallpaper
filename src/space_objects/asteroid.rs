@@ -20,7 +20,7 @@ pub struct Asteroid {
     rotation_speed: f32,
     travelled: f32,
     scale: f32,
-    location: Vec3,
+    // location: Vec3,
 }
 
 impl Default for Asteroid {
@@ -28,9 +28,9 @@ impl Default for Asteroid {
         let mut rng = rand::rng();
         // let half_pi = PI / 2.0;
 
-        let size = rng.random_range(0.1..0.240);
-        let speed = rng.random_range(16.5..25.0);
-        let speed = speed / 10.;
+        let size = rng.random_range(0.10..0.240);
+        let speed = rng.random_range(0.165..0.250);
+        // let speed = speed / 10.;
 
         // let theta_x = rng.random_range(-PI..PI);
         let theta = rng.random_range(0.0..2.0 * PI);
@@ -39,7 +39,7 @@ impl Default for Asteroid {
         // info!("spawn_at => {}", spawn_at);
         // let theta_x = rng.random_range(0.0..PI);
         // let theta_y = rng.random_range(0.0..PI);
-        let magnitude = size * 1.75;
+        let magnitude = size;
         let going_to = (theta, PI / 2.0, magnitude).into();
         // info!("going_to => {}", going_to);
         let rotation_axis = {
@@ -59,7 +59,7 @@ impl Default for Asteroid {
             rotation_speed,
             travelled,
             scale: 0.0,
-            location: Vec3::default(),
+            // location: Vec3::default(),
         }
     }
 }
@@ -81,8 +81,8 @@ impl SpaceThingTrait for Asteroid {
         // } else {
         //     self.going_to.lerp(self.spawn_at, self.travelled)
         // };
-        let delta = self.going_to.lerp(self.spawn_at, self.travelled);
-        self.location = delta;
+        let delta = self.spawn_at.lerp(self.going_to, self.travelled);
+        // self.location = delta;
 
         location.translation = delta;
     }
@@ -92,6 +92,7 @@ impl SpaceThingTrait for Asteroid {
     }
 
     fn get_transform(&mut self, fov: f32) -> Transform {
+        // let fov = 10000.0;
         // let mut tmp_loc = self.spawn_at.clone();
         // tmp_loc[2] = fov;
         // self.spawn_at[0] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].cos();
@@ -99,17 +100,25 @@ impl SpaceThingTrait for Asteroid {
         // self.spawn_at[2] = tmp_loc[2] * tmp_loc[1].cos();
         self.spawn_at[0] = 0.0;
         self.spawn_at[1] = 0.0;
-        self.spawn_at[2] = fov;
+        self.spawn_at[2] = -fov;
 
-        let tmp_loc = self.going_to.clone();
-        self.going_to[0] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].cos();
-        self.going_to[1] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].sin();
-        self.going_to[2] = tmp_loc[2] * tmp_loc[1].cos();
+        self.speed = (self.spawn_at.distance(self.going_to) * self.speed) / fov;
 
-        self.speed /= fov;
-
-        let scale = (1.0 / fov) * self.size;
+        // let scale = (1.0 / fov) * self.size;
+        let scale = self.size * (fov * 0.25);
         self.scale = scale;
+        self.going_to[2] *= fov * 0.75 + (scale * 2.0);
+
+        // self.speed /= scale;
+
+        {
+            let tmp_loc = self.going_to.clone();
+            self.going_to[0] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].cos();
+            self.going_to[1] = tmp_loc[2] * tmp_loc[1].sin() * tmp_loc[0].sin();
+            self.going_to[2] = tmp_loc[2] * tmp_loc[1].cos();
+        }
+
+        // self.speed /= fov;
 
         // Transform::from_xyz(self.spawn_at[0], self.spawn_at[1], self.spawn_at[2])
         Transform::from_xyz(self.going_to[0], self.going_to[1], self.going_to[2])
