@@ -105,7 +105,7 @@ impl SpaceThingTrait for Asteroid {
         self.speed = (self.spawn_at.distance(self.going_to) * self.speed) / fov;
 
         // let scale = (1.0 / fov) * self.size;
-        let scale = self.size * (fov * 0.25);
+        let scale = self.size * (fov * 0.05);
         self.scale = scale;
         self.going_to[2] *= fov * 0.75 + (scale * 2.0);
 
