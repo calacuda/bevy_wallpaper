@@ -1,7 +1,8 @@
 use super::SpaceThingTrait;
-use bevy::prelude::*;
+use crate::Shape;
+use bevy::{pbr::wireframe::NoWireframe, prelude::*};
 use rand::Rng;
-use std::{f32::consts::PI, path::PathBuf};
+use std::f32::consts::PI;
 
 pub const ASTEROID_MESH: &str = "mesh/debug.gltf";
 
@@ -87,8 +88,49 @@ impl SpaceThingTrait for Asteroid {
         location.translation = delta;
     }
 
-    fn get_mesh(&self) -> impl Into<PathBuf> {
-        ASTEROID_MESH
+    // fn get_mesh(&self) -> impl Into<PathBuf> {
+    //     ASTEROID_MESH
+    // }
+    fn spawn_model<'a>(
+        &mut self,
+        // mut cmds: Commands,
+        asset_server: &Res<AssetServer>,
+        // meshes: Res<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<StandardMaterial>>,
+        // transform: Transform,
+        fov: f32,
+    ) -> impl Bundle {
+        // Load the mesh and texture
+        // _ = asset_server.load_folder("models/asteroid/");
+        let mesh_palette = asset_server.load("models/asteroid/texture.png");
+        let mesh_handle = asset_server.load(
+            GltfAssetLabel::Primitive {
+                mesh: 0,
+                primitive: 0,
+            }
+            .from_asset("models/asteroid/model.gltf"),
+        );
+
+        // Create a material
+        let material_handle = materials.add(StandardMaterial {
+            base_color_texture: Some(mesh_palette.clone()),
+            ..Default::default()
+        });
+        let transform = self.get_transform(fov);
+
+        (
+            // self.clone(),
+            // Mesh3d(cube),
+            Mesh3d(mesh_handle),
+            // MeshMaterial3d(debug_material.clone()),
+            // MeshMaterial3d(debug_material.0.clone()),
+            MeshMaterial3d(material_handle),
+            // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
+            transform,
+            NoWireframe,
+            Shape,
+            // Visibility::Visible,
+        )
     }
 
     fn get_transform(&mut self, fov: f32) -> Transform {
@@ -106,7 +148,11 @@ impl SpaceThingTrait for Asteroid {
 
         // let scale = (1.0 / fov) * self.size;
         let scale = self.size * (fov * 0.05);
+        // let scale = self.size / fov;
+        // let scale = self.size;
         self.scale = scale;
+        // info!("scale = {scale}");
+        // info!("size = {}", self.size);
         self.going_to[2] *= fov * 0.75 + (scale * 2.0);
 
         // self.speed /= scale;
@@ -118,10 +164,12 @@ impl SpaceThingTrait for Asteroid {
             self.going_to[2] = tmp_loc[2] * tmp_loc[1].cos();
         }
 
+        // self.going_to = Vec3::ZERO;
+
         // self.speed /= fov;
 
         // Transform::from_xyz(self.spawn_at[0], self.spawn_at[1], self.spawn_at[2])
-        Transform::from_xyz(self.going_to[0], self.going_to[1], self.going_to[2])
+        Transform::from_xyz(self.spawn_at[0], self.spawn_at[1], self.spawn_at[2])
             .with_scale(Vec3::new(scale, scale, scale))
     }
 

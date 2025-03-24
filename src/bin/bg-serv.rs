@@ -15,12 +15,12 @@ use bevy::{
     winit::{WakeUp, WinitPlugin},
 };
 use bevy_linux_wallpaper::WallpaperPlugin;
-use bevy_wallpaper::space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid};
+use bevy_obj::ObjPlugin;
+use bevy_wallpaper::{
+    Shape,
+    space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid},
+};
 use std::f32::consts::PI;
-
-/// A marker component for our shapes so we can query them separately from the ground plane
-#[derive(Component)]
-struct Shape;
 
 #[derive(Component)]
 struct DebugTexture(pub Handle<StandardMaterial>);
@@ -54,6 +54,7 @@ fn main() {
                 .disable::<AudioPlugin>()
                 .disable::<WinitPlugin>(),
             WireframePlugin,
+            // ObjPlugin,
             wp_plug,
         ))
         .insert_resource(WireframeConfig {
@@ -71,6 +72,7 @@ fn main() {
             }
             .into(),
         })
+        // .add_systems(Startup, (camera_setup, spawn_spacething).chain())
         .add_systems(Startup, camera_setup)
         .add_systems(
             Update,
@@ -81,6 +83,7 @@ fn main() {
                 log_window_move,
                 despawn_spacethings,
                 spawn_spacething.run_if(time_to_spawn),
+                // log_assets,
             ),
         )
         .run();
@@ -108,7 +111,7 @@ fn camera_setup(
     // commands.insert_resource(ClearColor(
     //     Srgba {
     //         red: 0.,
-    //         green: 0.,
+    //      green: 0.,
     //         blue: 0.,
     //         alpha: 1.0,
     //     }
@@ -128,90 +131,77 @@ fn camera_setup(
         }),
     ));
 
-    let intensity = 75_000.0;
+    let intensity = 10_000_000.0;
+    let light = PointLight {
+        shadows_enabled: true,
+        // intensity: 10_000_000.,
+        intensity,
+        range: 10_000_000.0,
+        shadow_depth_bias: 0.2,
+        radius: PI * 0.5,
+        ..default()
+    };
 
     commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            // intensity: 10_000_000.,
-            intensity,
-            range: 100.0,
-            shadow_depth_bias: 0.2,
-            ..default()
-        },
+        light,
         // Transform::from_xyz(8.0, 16.0, 8.0),
-        Transform::from_xyz(1.0, 1.0, 8.0),
+        Transform::from_xyz(1.0, 1.0, 8.0).looking_at(Vec3::new(1.0, 1.0, 0.0), Vec3::Y),
     ));
 
     commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            // intensity: 10_000_000.,
-            intensity,
-            range: 100.0,
-            shadow_depth_bias: 0.2,
-            ..default()
-        },
+        light,
         // Transform::from_xyz(8.0, 16.0, 8.0),
-        Transform::from_xyz(-1.0, 1.0, 8.0),
+        Transform::from_xyz(-1.0, 1.0, 8.0).looking_at(Vec3::new(-1.0, 1.0, 0.0), Vec3::Y),
     ));
 
     commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            // intensity: 10_000_000.,
-            intensity,
-            range: 100.0,
-            shadow_depth_bias: 0.2,
-            ..default()
-        },
+        light,
         // Transform::from_xyz(8.0, 16.0, 8.0),
-        Transform::from_xyz(1.0, -1.0, 8.0),
+        Transform::from_xyz(1.0, -1.0, 8.0).looking_at(Vec3::new(1.0, -1.0, 0.0), Vec3::Y),
     ));
 
     commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            // intensity: 10_000_000.,
-            intensity,
-            range: 100.0,
-            shadow_depth_bias: 0.2,
-            ..default()
-        },
+        light,
         // Transform::from_xyz(8.0, 16.0, 8.0),
-        Transform::from_xyz(-1.0, -1.0, 8.0),
+        Transform::from_xyz(-1.0, -1.0, 8.0).looking_at(Vec3::new(-1.0, -1.0, 0.0), Vec3::Y),
     ));
 }
 
 fn spawn_spacething(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    debug_material: Single<&DebugTexture>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // debug_material: Single<&DebugTexture>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     // let cube = meshes.add(Cuboid::default());
-    let sphere = meshes.add(Sphere::default());
+    // let sphere = meshes.add(Sphere::default());
 
-    let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
-    let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
-    let mut space_rock = SpaceThing::Asteroid(Asteroid::default());
-    let transform = space_rock
-        .get_transform(1_000_000.0)
-        // .get_transform(1_000.0)
-        .with_rotation(rot_1 * rot_2);
+    // let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
+    // let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
+    let mut space_thing = SpaceThing::Asteroid(Asteroid::default());
+    // let transform = transform
+    //     .get_transform(1_000_000.0)
+    //     // .get_transform(1_000.0)
+    //     .with_rotation(rot_1 * rot_2);
     // .with_scale((0.10, 0.10, 0.10).into());
     // transform.scale *= Vec3::new(0.10, 0.10, 0.10);
 
-    commands.spawn((
-        // Mesh3d(cube),
-        Mesh3d(sphere),
-        // MeshMaterial3d(debug_material.clone()),
-        MeshMaterial3d(debug_material.0.clone()),
-        space_rock,
-        // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
-        transform,
-        NoWireframe,
-        Shape,
-    ));
+    commands
+        .spawn(space_thing.spawn_model(&asset_server, &mut materials, 1_000_000.0))
+        .insert(space_thing);
+
+    // commands.spawn((
+    //     // Mesh3d(cube),
+    //     Mesh3d(sphere),
+    //     // MeshMaterial3d(debug_material.clone()),
+    //     MeshMaterial3d(debug_material.0.clone()),
+    //     space_rock,
+    //     // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
+    //     transform,
+    //     NoWireframe,
+    //     Shape,
+    // ));
 
     // info!("spawning spacething");
     debug!("spawning spacething");
@@ -292,3 +282,15 @@ fn uv_debug_texture() -> Image {
         RenderAssetUsages::RENDER_WORLD,
     )
 }
+
+// fn log_assets(mut asset_evs: EventReader<AssetEvent<Mesh>>) {
+//     for ev in asset_evs.read() {
+//         warn!("{ev:?}");
+//         // match ev.to_owned() {
+//         //     AssetEvent::Added { id: _ } => {
+//         //         info!("Added");
+//         //     }
+//         //     _ => {}
+//         // }
+//     }
+// }
