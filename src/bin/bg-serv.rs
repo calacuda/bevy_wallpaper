@@ -15,7 +15,6 @@ use bevy::{
     winit::{WakeUp, WinitPlugin},
 };
 use bevy_linux_wallpaper::WallpaperPlugin;
-use bevy_obj::ObjPlugin;
 use bevy_wallpaper::{
     Shape,
     space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid},
@@ -174,34 +173,13 @@ fn spawn_spacething(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    // let cube = meshes.add(Cuboid::default());
     // let sphere = meshes.add(Sphere::default());
 
-    // let rot_1 = Quat::from_rotation_x(45.0 * (-PI / 180.0));
-    // let rot_2 = Quat::from_rotation_y(36.25 * (-PI / 180.0));
     let mut space_thing = SpaceThing::Asteroid(Asteroid::default());
-    // let transform = transform
-    //     .get_transform(1_000_000.0)
-    //     // .get_transform(1_000.0)
-    //     .with_rotation(rot_1 * rot_2);
-    // .with_scale((0.10, 0.10, 0.10).into());
-    // transform.scale *= Vec3::new(0.10, 0.10, 0.10);
 
     commands
         .spawn(space_thing.spawn_model(&asset_server, &mut materials, 1_000_000.0))
         .insert(space_thing);
-
-    // commands.spawn((
-    //     // Mesh3d(cube),
-    //     Mesh3d(sphere),
-    //     // MeshMaterial3d(debug_material.clone()),
-    //     MeshMaterial3d(debug_material.0.clone()),
-    //     space_rock,
-    //     // Transform::from_xyz(0.0, 0.0, 0.0).with_rotation(rot_1 * rot_2),
-    //     transform,
-    //     NoWireframe,
-    //     Shape,
-    // ));
 
     // info!("spawning spacething");
     debug!("spawning spacething");

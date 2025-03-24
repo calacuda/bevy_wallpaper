@@ -153,7 +153,7 @@ impl SpaceThingTrait for Asteroid {
         self.scale = scale;
         // info!("scale = {scale}");
         // info!("size = {}", self.size);
-        self.going_to[2] *= fov * 0.75 + (scale * 2.0);
+        self.going_to[2] *= fov * 0.5 + scale;
 
         // self.speed /= scale;
 
