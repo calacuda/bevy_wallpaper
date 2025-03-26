@@ -1,10 +1,10 @@
-use super::SpaceThingTrait;
+use super::{SpaceThing, SpaceThingTrait};
 use crate::Shape;
 use bevy::{pbr::wireframe::NoWireframe, prelude::*};
 use rand::Rng;
 use std::f32::consts::PI;
 
-pub const ASTEROID_MESH: &str = "mesh/debug.gltf";
+// pub const ASTEROID_MESH: &str = "mesh/debug.gltf";
 
 #[derive(Clone, Debug, Component)]
 pub struct Asteroid {
@@ -91,15 +91,16 @@ impl SpaceThingTrait for Asteroid {
     // fn get_mesh(&self) -> impl Into<PathBuf> {
     //     ASTEROID_MESH
     // }
-    fn spawn_model<'a>(
+    fn spawn_model(
         &mut self,
+        mut cmds: Commands,
         // mut cmds: Commands,
         asset_server: &Res<AssetServer>,
         // meshes: Res<Assets<Mesh>>,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         // transform: Transform,
         fov: f32,
-    ) -> impl Bundle {
+    ) {
         // Load the mesh and texture
         // _ = asset_server.load_folder("models/asteroid/");
         let mesh_palette = asset_server.load("models/asteroid/texture.png");
@@ -114,12 +115,14 @@ impl SpaceThingTrait for Asteroid {
         // Create a material
         let material_handle = materials.add(StandardMaterial {
             base_color_texture: Some(mesh_palette.clone()),
+            perceptual_roughness: 1.0,
             ..Default::default()
         });
         let transform = self.get_transform(fov);
 
-        (
+        cmds.spawn((
             // self.clone(),
+            SpaceThing::Asteroid(self.clone()),
             // Mesh3d(cube),
             Mesh3d(mesh_handle),
             // MeshMaterial3d(debug_material.clone()),
@@ -130,7 +133,7 @@ impl SpaceThingTrait for Asteroid {
             NoWireframe,
             Shape,
             // Visibility::Visible,
-        )
+        ));
     }
 
     fn get_transform(&mut self, fov: f32) -> Transform {

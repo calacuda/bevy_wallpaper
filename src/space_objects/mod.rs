@@ -1,9 +1,11 @@
 use asteroid::Asteroid;
+use astronaut::Astronaut;
 use bevy::prelude::*;
 use enum_dispatch::enum_dispatch;
 // use std::path::PathBuf;
 
 pub mod asteroid;
+pub mod astronaut;
 
 #[enum_dispatch(SpaceThing)]
 pub trait SpaceThingTrait: Default {
@@ -15,12 +17,13 @@ pub trait SpaceThingTrait: Default {
     fn spawn_model<'a>(
         &mut self,
         // cmds: Commands,
+        cmds: Commands,
         asset_server: &Res<AssetServer>,
         // meshes: Res<Assets<Mesh>>,
         materials: &mut ResMut<Assets<StandardMaterial>>,
         // transform: Transform,
         fov: f32,
-    ) -> impl Bundle;
+    );
     /// set FOV in km;
     fn get_transform(&mut self, fov: f32) -> Transform;
     /// will return true when the SpaceThing is out of view and should despawn.
@@ -33,7 +36,7 @@ pub trait SpaceThingTrait: Default {
 #[derive(Clone, Debug, Component)]
 pub enum SpaceThing {
     Asteroid(Asteroid),
-    // SpacePerson,
+    Astronaut(Astronaut),
     // Alian,
     // AlianShip,
     // SatiLite,

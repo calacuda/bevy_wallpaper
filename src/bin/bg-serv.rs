@@ -3,7 +3,7 @@ use bevy::{
     asset::RenderAssetUsages,
     audio::AudioPlugin,
     log::{Level, LogPlugin},
-    pbr::wireframe::{NoWireframe, WireframeConfig, WireframePlugin},
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
     render::{
         pipelined_rendering::PipelinedRenderingPlugin,
@@ -17,7 +17,7 @@ use bevy::{
 use bevy_linux_wallpaper::WallpaperPlugin;
 use bevy_wallpaper::{
     Shape,
-    space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid},
+    space_objects::{SpaceThing, SpaceThingTrait, asteroid::Asteroid, astronaut::Astronaut},
 };
 use std::f32::consts::PI;
 
@@ -48,7 +48,7 @@ fn main() {
                     }),
                     ..Default::default()
                 })
-                .disable::<PipelinedRenderingPlugin>()
+                // .disable::<PipelinedRenderingPlugin>()
                 .disable::<AccessibilityPlugin>()
                 .disable::<AudioPlugin>()
                 .disable::<WinitPlugin>(),
@@ -135,7 +135,7 @@ fn camera_setup(
         shadows_enabled: true,
         // intensity: 10_000_000.,
         intensity,
-        range: 10_000_000.0,
+        range: 1_000.0,
         shadow_depth_bias: 0.2,
         radius: PI * 0.5,
         ..default()
@@ -167,7 +167,7 @@ fn camera_setup(
 }
 
 fn spawn_spacething(
-    mut commands: Commands,
+    cmds: Commands,
     // mut meshes: ResMut<Assets<Mesh>>,
     // debug_material: Single<&DebugTexture>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -175,11 +175,14 @@ fn spawn_spacething(
 ) {
     // let sphere = meshes.add(Sphere::default());
 
-    let mut space_thing = SpaceThing::Asteroid(Asteroid::default());
+    // let mut space_thing = SpaceThing::Asteroid(Asteroid::default());
+    let mut space_thing = SpaceThing::Astronaut(Astronaut::default());
 
-    commands
-        .spawn(space_thing.spawn_model(&asset_server, &mut materials, 1_000_000.0))
-        .insert(space_thing);
+    // commands
+    //     .spawn(space_thing.spawn_model(&asset_server, &mut materials, 1_000_000.0))
+    //     .insert(space_thing);
+    // let id = cmds.spawn(space_thing).id();
+    space_thing.spawn_model(cmds, &asset_server, &mut materials, 1_000_000.0);
 
     // info!("spawning spacething");
     debug!("spawning spacething");

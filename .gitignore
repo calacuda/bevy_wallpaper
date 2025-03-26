@@ -20,3 +20,4 @@ target/
 
 /target
 Cargo.lock
+assets/models/astronaut/textures/3dpea.com_*
