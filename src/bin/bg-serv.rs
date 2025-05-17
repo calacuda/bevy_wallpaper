@@ -37,9 +37,14 @@ fn main() {
                         name: Some("wallpaper".into()),
                         window_level: WindowLevel::AlwaysOnBottom,
                         mode: WindowMode::Windowed,
+                        // mode: WindowMode::Fullscreen(MonitorSelection::Primary),
                         skip_taskbar: false,
                         titlebar_shown: false,
-                        resolution: WindowResolution::new(1920., 1080.),
+                        // resolution: WindowResolution::new(1920., 1080.),
+                        resolution: WindowResolution::new(5760., 1080.),
+                        // position: WindowPosition::Centered(MonitorSelection::Primary),
+                        position: WindowPosition::At((0, 0).into()),
+                        fullsize_content_view: true,
                         ..Default::default()
                     }),
                     ..Default::default()
